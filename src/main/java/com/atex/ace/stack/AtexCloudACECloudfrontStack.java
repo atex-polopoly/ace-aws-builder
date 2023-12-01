@@ -73,8 +73,8 @@ public class AtexCloudACECloudfrontStack
         Distribution apiDistribution = createApiDistribution(apiOrigin, apiOriginRequestPolicy, apiCachePolicy, hostedZone);
         Distribution aceCustomerWebsite = createWebsiteDistribution(apiOrigin, apiOriginRequestPolicy, apiCachePolicy, hostedZone);
 
-        dnsEntry(String.format("api.%s.%s", properties.customerName(), properties.environmentType().getHostedZoneName()), apiDistribution.getDistributionDomainName(), hostedZone);
-        dnsEntry(String.format("%s.%s", properties.customerName(), properties.environmentType().getHostedZoneName()), aceCustomerWebsite.getDistributionDomainName(), hostedZone);
+        dnsEntry(apiDomainName(), apiDistribution.getDistributionDomainName(), hostedZone);
+        dnsEntry(websiteDomainName(), aceCustomerWebsite.getDistributionDomainName(), hostedZone);
     }
 
     private Distribution createApiDistribution(final IOrigin origin,
@@ -82,7 +82,7 @@ public class AtexCloudACECloudfrontStack
                                                final ICachePolicy cachePolicy,
                                                final IHostedZone hostedZone)
     {
-        ICertificate cloudfrontApiCertificate = certificate("APICertificate", String.format("api.%s.%s", properties.customerName(), properties.environmentType().getHostedZoneName()), hostedZone);
+        ICertificate cloudfrontApiCertificate = certificate("APICertificate", apiDomainName(), hostedZone);
 
         Map<String, BehaviorOptions> behaviours = new HashMap<>();
 
@@ -103,7 +103,7 @@ public class AtexCloudACECloudfrontStack
 
         return Distribution.Builder.create(this, "APIDistribution")
                                    .comment(String.format("%s %s API", properties.customerName(), properties.environmentType().getName()))
-                                   .domainNames(List.of(String.format("api.%s.%s", properties.customerName(), properties.environmentType().getHostedZoneName())))
+                                   .domainNames(List.of(apiDomainName()))
                                    .certificate(cloudfrontApiCertificate)
                                    .defaultBehavior(BehaviorOptions.builder()
                                                                    .origin(origin)
@@ -119,11 +119,14 @@ public class AtexCloudACECloudfrontStack
                                                    final ICachePolicy cachePolicy,
                                                    final IHostedZone hostedZone)
     {
-        ICertificate cloudfrontWebsiteCertificate = certificate("WebsiteCertificate", String.format("%s.%s", properties.customerName(), properties.environmentType().getHostedZoneName()), hostedZone);
+        ICertificate cloudfrontWebsiteCertificate = certificate("WebsiteCertificate", websiteDomainName(), hostedZone);
+
+        certificate("WebsiteCertificate", websiteDomainName(), hostedZone);
+
 
         return Distribution.Builder.create(this, "WebsiteDistribution")
                                    .comment(String.format("%s %s", properties.customerName(), properties.environmentType().getName()))
-                                   .domainNames(List.of(String.format("%s.%s", properties.customerName(), properties.environmentType().getHostedZoneName())))
+                                   .domainNames(List.of(websiteDomainName()))
                                    .certificate(cloudfrontWebsiteCertificate)
                                    .defaultBehavior(BehaviorOptions.builder()
                                                                    .origin(origin)

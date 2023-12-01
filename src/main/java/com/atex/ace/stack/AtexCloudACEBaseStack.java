@@ -42,21 +42,20 @@ public class AtexCloudACEBaseStack
         ManagedPolicy contentFilesBucketAccessPolicy = contentFilesBucketAccessPolicy(contentFilesBucket);
         User contentFilesBucketUser = user(List.of(contentFilesBucketAccessPolicy));
 
-        CfnAccessKey contentFilesBucketUserAccessKey = accessKey(contentFilesBucketUser);
+        CfnAccessKey contentFilesBucketUserAccessKey = accessKey("ContentFilesBucketAccessKey", contentFilesBucketUser);
 
         asOutput("ContentFilesBucketAccessKeyOutput", contentFilesBucketUserAccessKey.getRef());
         asOutput("ContentFilesBucketSecretKeyOutput", contentFilesBucketUserAccessKey.getAttrSecretAccessKey());
 
         // Certificates
 
-        certificate("APICertificate", String.format("api.%s.%s", properties.customerName(), properties.environmentType().getHostedZoneName()), hostedZone);
-        certificate("SitemapCertificate", String.format("sitemap.%s.%s", properties.customerName(), properties.environmentType().getHostedZoneName()), hostedZone);
-        certificate("WebsiteCertificate", String.format("%s.%s", properties.customerName(), properties.environmentType().getHostedZoneName()), hostedZone);
+        certificate("APICertificate", apiDomainName(), hostedZone);
+        certificate("SitemapCertificate", sitemapDomainName(), hostedZone);
+        certificate("WebsiteCertificate", websiteDomainName(), hostedZone);
 
         // DNS entries
 
-        dnsEntry(String.format("sitemap.%s.%s", properties.customerName(), properties.environmentType().getHostedZoneName()),
-                 "atex-Route-1VIM60JZT7VDC-2038118370.eu-west-1.elb.amazonaws.com", hostedZone);
+        dnsEntry(sitemapDomainName(), properties.loadBalancerDomain(), hostedZone);
 
         // ACE access policy
 
@@ -100,13 +99,6 @@ public class AtexCloudACEBaseStack
                                                                                         allow(String.format("arn:aws:s3:::%s/*", bucket.getBucketName()), "s3:PutObject", "s3:GetObject")))
                                                                     .build())
                                     .build();
-    }
-
-    private CfnAccessKey accessKey(final User user)
-    {
-        return CfnAccessKey.Builder.create(this, "ContentFilesBucketAccessKey")
-                                   .userName(user.getUserName())
-                                   .build();
     }
 
     private Bucket contentFilesBucket()

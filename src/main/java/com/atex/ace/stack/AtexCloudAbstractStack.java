@@ -7,6 +7,8 @@ import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.certificatemanager.Certificate;
 import software.amazon.awscdk.services.certificatemanager.CertificateValidation;
+import software.amazon.awscdk.services.iam.CfnAccessKey;
+import software.amazon.awscdk.services.iam.User;
 import software.amazon.awscdk.services.route53.CnameRecord;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
@@ -64,6 +66,34 @@ public abstract class AtexCloudAbstractStack
                                   .certificateName(certificateName)
                                   .validation(CertificateValidation.fromDns(hostedZone))
                                   .build();
+    }
+
+    protected CfnAccessKey accessKey(final String name,
+                                     final User user)
+    {
+        return CfnAccessKey.Builder.create(this, name)
+                                   .userName(user.getUserName())
+                                   .build();
+    }
+
+    protected String apiDomainName()
+    {
+        return String.format("api.%s.%s",
+                             properties.customerName(),
+                             properties.environmentType().getHostedZoneName());
+    }
+
+    protected String sitemapDomainName()
+    {
+        return String.format("sitemap.%s.%s",
+                             properties.customerName(),
+                             properties.environmentType().getHostedZoneName());
+    }
+
+    protected String websiteDomainName()
+    {
+        return String.format("%s.%s", properties.customerName(),
+                             properties.environmentType().getHostedZoneName());
     }
 
     private IHostedZone lookupHostedZone()
