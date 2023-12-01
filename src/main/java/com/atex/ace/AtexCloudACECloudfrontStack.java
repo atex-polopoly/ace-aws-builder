@@ -27,53 +27,61 @@ import software.amazon.awscdk.services.route53.CnameRecord;
 import software.amazon.awscdk.services.route53.IHostedZone;
 import software.constructs.Construct;
 
+/**
+ * Stack that will construct the AWS resources necessary for all web delivery.
+ * This will include:
+ *
+ * - Standard Atex Cloud Cloudfront policies
+ * - Cloudfront API distribution
+ * - Cloudfront website distribution
+ * - Certificates
+ * - DNS entries
+ */
 public class AtexCloudACECloudfrontStack
     extends AtexCloudAbstractStack
 {
-    private CommonProperties properties;
-
     public AtexCloudACECloudfrontStack(final Construct scope,
                                        final String id,
                                        final StackProps props,
                                        final CommonProperties properties)
     {
-        super(scope, id, props);
-
-        this.properties = properties;
-
-        // Hosted zone
+        super(scope, id, props, properties);
 
         IHostedZone hostedZone = lookupHostedZone();
 
         // CF origin
 
-        HttpOrigin apiOrigin = HttpOrigin.Builder.create("atex-Route-1VIM60JZT7VDC-2038118370.eu-west-1.elb.amazonaws.com")
-                                                 .originId("customer ELB")
+        HttpOrigin apiOrigin = HttpOrigin.Builder.create(properties.loadBalancerDomain())
+                                                 .originId("Atex Cloud rack ELB")
                                                  .build();
 
-        OriginRequestPolicy aceAPIOriginRequestPolicy = OriginRequestPolicy.Builder.create(this, "ace-api-origin-request-policy")
-                                                                                   .comment("ACE API origin request policy")
-                                                                                   .originRequestPolicyName("ACE-API-Origin-2")
-                                                                                   .cookieBehavior(OriginRequestCookieBehavior.none())
-                                                                                   .headerBehavior(OriginRequestHeaderBehavior.all())
-                                                                                   .queryStringBehavior(OriginRequestQueryStringBehavior.all())
-                                                                                   .build();
+        // Policies
 
-        CachePolicy aceAPICachePolicy = CachePolicy.Builder.create(this, "ace-api-cache-policy")
-                                                           .comment("ACE API cache policy")
-                                                           .cachePolicyName("ACE-API-Cache-2")
-                                                           .cookieBehavior(CacheCookieBehavior.none())
-                                                           .headerBehavior(CacheHeaderBehavior.none())
-                                                           .queryStringBehavior(CacheQueryStringBehavior.all())
-                                                           .enableAcceptEncodingBrotli(true)
-                                                           .enableAcceptEncodingGzip(true)
-                                                           .minTtl(Duration.seconds(0))
-                                                           .maxTtl(Duration.days(365))
-                                                           .defaultTtl(Duration.seconds(0))
-                                                           .build();
+        OriginRequestPolicy apiOriginRequestPolicy = OriginRequestPolicy.Builder.create(this, "ace-api-origin-request-policy")
+                                                                                .comment("ACE API origin request policy")
+                                                                                .originRequestPolicyName("ACE-API-Origin-2")
+                                                                                .cookieBehavior(OriginRequestCookieBehavior.none())
+                                                                                .headerBehavior(OriginRequestHeaderBehavior.all())
+                                                                                .queryStringBehavior(OriginRequestQueryStringBehavior.all())
+                                                                                .build();
 
-        Distribution apiDistribution = createApiDistribution(apiOrigin, aceAPIOriginRequestPolicy, aceAPICachePolicy, hostedZone);
-        Distribution aceCustomerWebsite = createWebsiteDistribution(apiOrigin, aceAPIOriginRequestPolicy, aceAPICachePolicy, hostedZone);
+        CachePolicy apiCachePolicy = CachePolicy.Builder.create(this, "ace-api-cache-policy")
+                                                        .comment("ACE API cache policy")
+                                                        .cachePolicyName("ACE-API-Cache-2")
+                                                        .cookieBehavior(CacheCookieBehavior.none())
+                                                        .headerBehavior(CacheHeaderBehavior.none())
+                                                        .queryStringBehavior(CacheQueryStringBehavior.all())
+                                                        .enableAcceptEncodingBrotli(true)
+                                                        .enableAcceptEncodingGzip(true)
+                                                        .minTtl(Duration.seconds(0))
+                                                        .maxTtl(Duration.days(365))
+                                                        .defaultTtl(Duration.seconds(0))
+                                                        .build();
+
+        // TODO: response headers policy...
+
+        Distribution apiDistribution = createApiDistribution(apiOrigin, apiOriginRequestPolicy, apiCachePolicy, hostedZone);
+        Distribution aceCustomerWebsite = createWebsiteDistribution(apiOrigin, apiOriginRequestPolicy, apiCachePolicy, hostedZone);
 
         CName(apiDistribution.getDistributionDomainName(), hostedZone);
         CName(aceCustomerWebsite.getDistributionDomainName(), hostedZone);

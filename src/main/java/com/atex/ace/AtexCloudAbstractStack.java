@@ -11,11 +11,16 @@ import software.constructs.Construct;
 public abstract class AtexCloudAbstractStack
     extends Stack
 {
+    protected final CommonProperties properties;
+
     public AtexCloudAbstractStack(final Construct scope,
                                   final String id,
-                                  final StackProps props)
+                                  final StackProps props,
+                                  final CommonProperties properties)
     {
         super(scope, id, props);
+
+        this.properties = properties;
     }
 
     protected void asOutput(final String outputName,
@@ -29,10 +34,10 @@ public abstract class AtexCloudAbstractStack
 
     protected IHostedZone lookupHostedZone()
     {
-        return HostedZone.fromHostedZoneAttributes(this, "dev.atexcloud.io",
+        return HostedZone.fromHostedZoneAttributes(this, "HostedZone",
                                                    HostedZoneAttributes.builder()
-                                                                       .zoneName("dev.atexcloud.io")
-                                                                       .hostedZoneId("Z02835961VQ8N8ROSFCY3") // this is dev...
+                                                                       .hostedZoneId(properties.environmentType().getHostedZoneId())
+                                                                       .zoneName(properties.environmentType().getHostedZoneName())
                                                                        .build());
     }
 }
