@@ -5,7 +5,7 @@ public enum EnvironmentType
     DEV("dev", "Z02835961VQ8N8ROSFCY3", "dev.atexcloud.io"),
     STAGING("staging", "???", "???"),
 
-    PROD;
+    PROD("production", null, "atexcloud.io");
 
     private String name;
 

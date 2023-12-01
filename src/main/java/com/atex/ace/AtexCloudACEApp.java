@@ -1,5 +1,9 @@
 package com.atex.ace;
 
+import com.atex.ace.stack.AtexCloudACEBaseStack;
+import com.atex.ace.stack.AtexCloudACECloudfrontStack;
+import java.time.Instant;
+import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
@@ -17,7 +21,8 @@ public class AtexCloudACEApp
         String accountId = getRequiredContext(app.getNode(), "account-id", "Account ID ('account-id') is a required input!");
         String region = getRequiredContext(app.getNode(), "region", "Region ('region') is a required input!");
 
-        String customerName = getRequiredContext(app.getNode(), "customer-name", "Customer name ('customer-name') is a required input!");
+        // Customer name is always just lowercase, so both 'Zawya' and 'ZAWYA' will be 'zawya'
+        String customerName = getRequiredContext(app.getNode(), "customer-name", "Customer name ('customer-name') is a required input!").trim().toLowerCase();
 
         String loadBalancerDomain = getRequiredContext(app.getNode(), "elb-domain", "Load balancer domain ('elb-domain') is a required input!");
         String databaseClusterARN = getRequiredContext(app.getNode(), "database-arn", "Database ARN ('database-arn') is a required input!");
@@ -32,6 +37,7 @@ public class AtexCloudACEApp
             new AtexCloudACEBaseStack(app, "ACEBaseStack",
                                       StackProps.builder()
                                                 .env(env(accountId, region))
+                                                .tags(standardTags(properties))
                                                 .crossRegionReferences(true) // this is not really necessary at the moment
                                                 .build(),
                                       properties);
@@ -40,6 +46,7 @@ public class AtexCloudACEApp
             new AtexCloudACECloudfrontStack(app, "ACECloudfrontStack",
                                             StackProps.builder()
                                                       .env(env(accountId, "us-east-1")) // this stack has to be in North Virginia for CloudFront
+                                                      .tags(standardTags(properties))
                                                       .crossRegionReferences(true) // this is not really necessary at the moment
                                                       .build(),
                                             properties);
@@ -47,6 +54,14 @@ public class AtexCloudACEApp
         cloudfrontStack.addDependency(baseStack); // this is not really necessary at the moment
 
         app.synth();
+    }
+
+    private static Map<String, String> standardTags(final CommonProperties properties)
+    {
+        return Map.of("customer", properties.customerName(),
+                      "atexSoftware", "ACE",
+                      "environment", properties.environmentType().getName(),
+                      "lastUpdated", Instant.now().toString());
     }
 
     private static Environment env(final String accountId,

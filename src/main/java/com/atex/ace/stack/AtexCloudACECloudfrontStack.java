@@ -1,12 +1,11 @@
-package com.atex.ace;
+package com.atex.ace.stack;
 
+import com.atex.ace.CommonProperties;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.StackProps;
-import software.amazon.awscdk.services.certificatemanager.Certificate;
-import software.amazon.awscdk.services.certificatemanager.CertificateValidation;
 import software.amazon.awscdk.services.certificatemanager.ICertificate;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
 import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
@@ -23,19 +22,12 @@ import software.amazon.awscdk.services.cloudfront.OriginRequestHeaderBehavior;
 import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
 import software.amazon.awscdk.services.cloudfront.OriginRequestQueryStringBehavior;
 import software.amazon.awscdk.services.cloudfront.origins.HttpOrigin;
-import software.amazon.awscdk.services.route53.CnameRecord;
 import software.amazon.awscdk.services.route53.IHostedZone;
 import software.constructs.Construct;
 
 /**
- * Stack that will construct the AWS resources necessary for all web delivery.
- * This will include:
- *
- * - Standard Atex Cloud Cloudfront policies
- * - Cloudfront API distribution
- * - Cloudfront website distribution
- * - Certificates
- * - DNS entries
+ * Stack that will construct all web delivery AWS resources
+ * necessary for an ACE installation.
  */
 public class AtexCloudACECloudfrontStack
     extends AtexCloudAbstractStack
@@ -46,8 +38,6 @@ public class AtexCloudACECloudfrontStack
                                        final CommonProperties properties)
     {
         super(scope, id, props, properties);
-
-        IHostedZone hostedZone = lookupHostedZone();
 
         // CF origin
 
@@ -83,8 +73,8 @@ public class AtexCloudACECloudfrontStack
         Distribution apiDistribution = createApiDistribution(apiOrigin, apiOriginRequestPolicy, apiCachePolicy, hostedZone);
         Distribution aceCustomerWebsite = createWebsiteDistribution(apiOrigin, apiOriginRequestPolicy, apiCachePolicy, hostedZone);
 
-        CName(apiDistribution.getDistributionDomainName(), hostedZone);
-        CName(aceCustomerWebsite.getDistributionDomainName(), hostedZone);
+        dnsEntry(String.format("api.%s.%s", properties.customerName(), properties.environmentType().getHostedZoneName()), apiDistribution.getDistributionDomainName(), hostedZone);
+        dnsEntry(String.format("%s.%s", properties.customerName(), properties.environmentType().getHostedZoneName()), aceCustomerWebsite.getDistributionDomainName(), hostedZone);
     }
 
     private Distribution createApiDistribution(final IOrigin origin,
@@ -92,11 +82,7 @@ public class AtexCloudACECloudfrontStack
                                                final ICachePolicy cachePolicy,
                                                final IHostedZone hostedZone)
     {
-        ICertificate cloudfrontApiCertificate = Certificate.Builder.create(this, "api-cloudfront-customer-cert")
-                                                                   .domainName(String.format("api.%s.dev.atexcloud.io", properties.customerName()))
-                                                                   .certificateName("api-cloudfront-customer-cert")
-                                                                   .validation(CertificateValidation.fromDns(hostedZone))
-                                                                   .build();
+        ICertificate cloudfrontApiCertificate = certificate("APICertificate", String.format("api.%s.%s", properties.customerName(), properties.environmentType().getHostedZoneName()), hostedZone);
 
         Map<String, BehaviorOptions> behaviours = new HashMap<>();
 
@@ -115,9 +101,9 @@ public class AtexCloudACECloudfrontStack
                                                             .cachePolicy(cachePolicy)
                                                             .build());
 
-        return Distribution.Builder.create(this, "api-customer-cloudfront")
-                                   .comment(String.format("%s dev API", properties.customerName()))
-                                   .domainNames(List.of(String.format("api.%s.dev.atexcloud.io", properties.customerName())))
+        return Distribution.Builder.create(this, "APIDistribution")
+                                   .comment(String.format("%s %s API", properties.customerName(), properties.environmentType().getName()))
+                                   .domainNames(List.of(String.format("api.%s.%s", properties.customerName(), properties.environmentType().getHostedZoneName())))
                                    .certificate(cloudfrontApiCertificate)
                                    .defaultBehavior(BehaviorOptions.builder()
                                                                    .origin(origin)
@@ -128,31 +114,16 @@ public class AtexCloudACECloudfrontStack
                                    .build();
     }
 
-    private CnameRecord CName(final String domainName,
-                              final IHostedZone hostedZone)
-    {
-        return CnameRecord.Builder.create(this, String.format("api.%s.dev.atexcloud.io", properties.customerName()))
-                                  .recordName(String.format("api.%s.dev.atexcloud.io", properties.customerName()))
-                                  .domainName(domainName)
-                                  .ttl(Duration.minutes(5))
-                                  .zone(hostedZone)
-                                  .build();
-    }
-
     private Distribution createWebsiteDistribution(final IOrigin origin,
                                                    final IOriginRequestPolicy originRequestPolicy,
                                                    final ICachePolicy cachePolicy,
                                                    final IHostedZone hostedZone)
     {
-        ICertificate cloudfrontWebsiteCertificate = Certificate.Builder.create(this, "website-cloudfront-customer-cert")
-                                                                       .domainName(String.format("%s.dev.atexcloud.io", properties.customerName()))
-                                                                       .certificateName("website-cloudfront-customer-cert")
-                                                                       .validation(CertificateValidation.fromDns(hostedZone))
-                                                                       .build();
+        ICertificate cloudfrontWebsiteCertificate = certificate("WebsiteCertificate", String.format("%s.%s", properties.customerName(), properties.environmentType().getHostedZoneName()), hostedZone);
 
-        return Distribution.Builder.create(this, "api-customer-website-cloudfront")
-                                   .comment(String.format("%s dev", properties.customerName()))
-                                   .domainNames(List.of(String.format("%s.dev.atexcloud.io", properties.customerName())))
+        return Distribution.Builder.create(this, "WebsiteDistribution")
+                                   .comment(String.format("%s %s", properties.customerName(), properties.environmentType().getName()))
+                                   .domainNames(List.of(String.format("%s.%s", properties.customerName(), properties.environmentType().getHostedZoneName())))
                                    .certificate(cloudfrontWebsiteCertificate)
                                    .defaultBehavior(BehaviorOptions.builder()
                                                                    .origin(origin)
