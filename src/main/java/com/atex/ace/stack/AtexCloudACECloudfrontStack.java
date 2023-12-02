@@ -51,7 +51,7 @@ public class AtexCloudACECloudfrontStack
     {
         super(scope, id, props, properties);
 
-        // CF origin
+        // Cloudfront origins
 
         HttpOrigin aceApiOrigin = HttpOrigin.Builder.create(properties.loadBalancerDomain())
                                                     .originId("Atex Cloud rack ELB")
@@ -65,47 +65,13 @@ public class AtexCloudACECloudfrontStack
                                                      .originSslProtocols(List.of(TLS_V1_2))
                                                      .build();
 
-        // Policies
-
-        // TODO: both of these policies should not be created in dev or staging since they already exist...
+        // Cloudfront policies
 
         ICachePolicy apiCachePolicy = cachePolicy();
         IOriginRequestPolicy apiOriginRequestPolicy = originRequestPolicy();
         IResponseHeadersPolicy apiResponseHeadersPolicy = responseHeadersPolicy();
 
-//        if (properties.environmentType() == DEV || properties.environmentType() == STAGING) {
-//            apiCachePolicy = CachePolicy.fromCachePolicyId(this, "ACEAPICachePolicy", "ACE-API-Cache");
-//
-//            apiOriginRequestPolicy = OriginRequestPolicy.fromOriginRequestPolicyId(this, "ACEAPIOriginRequestPolicy", "ACE-API-Origin");
-//            apiResponseHeadersPolicy = ResponseHeadersPolicy.fromResponseHeadersPolicyId(this, "ACEAPIResponseHeadersPolicy", "ACE-API-Response");
-//        } else {
-//            apiCachePolicy = CachePolicy.Builder.create(this, "ACEAPICachePolicy")
-//                                                .comment("ACE API cache policy")
-//                                                .cachePolicyName("ACE-API-Cache")
-//                                                .cookieBehavior(CacheCookieBehavior.none())
-//                                                .headerBehavior(CacheHeaderBehavior.none())
-//                                                .queryStringBehavior(CacheQueryStringBehavior.all())
-//                                                .enableAcceptEncodingBrotli(true)
-//                                                .enableAcceptEncodingGzip(true)
-//                                                .minTtl(Duration.seconds(0))
-//                                                .maxTtl(Duration.days(365))
-//                                                .defaultTtl(Duration.seconds(0))
-//                                                .build();
-//
-//            apiOriginRequestPolicy = OriginRequestPolicy.Builder.create(this, "ACEAPIOriginRequestPolicy")
-//                                                                .comment("ACE API origin request policy")
-//                                                                .originRequestPolicyName("ACE-API-Origin")
-//                                                                .cookieBehavior(OriginRequestCookieBehavior.none())
-//                                                                .headerBehavior(OriginRequestHeaderBehavior.all())
-//                                                                .queryStringBehavior(OriginRequestQueryStringBehavior.all())
-//                                                                .build();
-//
-//            apiResponseHeadersPolicy = ResponseHeadersPolicy.Builder.create(this, "ACEAPIResponseHeadersPolicy")
-//                                                                    .comment("ACE API origin response header policy")
-//                                                                    .responseHeadersPolicyName("ACE-API-Response")
-//                                                                    .customHeadersBehavior(ResponseCustomHeadersBehavior.builder().customHeaders(List.of()).build())
-//                                                                    .build();
-//        }
+        // Cloudfront distributions
 
         Distribution apiDistribution = createApiDistribution(aceApiOrigin, apiOriginRequestPolicy, apiResponseHeadersPolicy, apiCachePolicy, hostedZone);
         Distribution aceCustomerWebsite = createWebsiteDistribution(websiteOrigin, hostedZone);
@@ -141,8 +107,6 @@ public class AtexCloudACECloudfrontStack
                                                                                           .build())
                                                           .build());
 
-        // TODO: origin response policy...
-
         behaviours.put("/content-service/*", BehaviorOptions.builder()
                                                             .origin(origin)
                                                             .compress(true)
@@ -152,8 +116,6 @@ public class AtexCloudACECloudfrontStack
                                                             .responseHeadersPolicy(responseHeadersPolicy)
                                                             .cachePolicy(cachePolicy)
                                                             .build());
-
-        // TODO: origin response policy...
 
         return Distribution.Builder.create(this, "APIDistribution")
                                    .comment(String.format("%s %s API", properties.customerName(), properties.environmentType().getName()))
@@ -204,7 +166,7 @@ public class AtexCloudACECloudfrontStack
     private ICachePolicy cachePolicy()
     {
         if (properties.environmentType() == DEV || properties.environmentType() == STAGING) {
-            return CachePolicy.fromCachePolicyId(this, "ACEAPICachePolicy", properties.environmentType().getCloudfrontCachePolicyId());
+            return CachePolicy.fromCachePolicyId(this, "ACEAPICachePolicy", properties.environmentType().getCloudfrontDetails().cachePolicyId());
         }
 
         return CachePolicy.Builder.create(this, "ACEAPICachePolicy")
@@ -224,7 +186,7 @@ public class AtexCloudACECloudfrontStack
     private IOriginRequestPolicy originRequestPolicy()
     {
         if (properties.environmentType() == DEV || properties.environmentType() == STAGING) {
-            return OriginRequestPolicy.fromOriginRequestPolicyId(this, "ACEAPIOriginRequestPolicy", properties.environmentType().getCloudfrontOriginRequestPolicyId());
+            return OriginRequestPolicy.fromOriginRequestPolicyId(this, "ACEAPIOriginRequestPolicy", properties.environmentType().getCloudfrontDetails().originRequestPolicyId());
         }
 
         return OriginRequestPolicy.Builder.create(this, "ACEAPIOriginRequestPolicy")
@@ -239,7 +201,7 @@ public class AtexCloudACECloudfrontStack
     private IResponseHeadersPolicy responseHeadersPolicy()
     {
         if (properties.environmentType() == DEV || properties.environmentType() == STAGING) {
-            return ResponseHeadersPolicy.fromResponseHeadersPolicyId(this, "ACEAPIResponseHeadersPolicy", properties.environmentType().getCloudfrontResponseHeadersPolicyId());
+            return ResponseHeadersPolicy.fromResponseHeadersPolicyId(this, "ACEAPIResponseHeadersPolicy", properties.environmentType().getCloudfrontDetails().responseHeadersPolicyId());
         }
 
 

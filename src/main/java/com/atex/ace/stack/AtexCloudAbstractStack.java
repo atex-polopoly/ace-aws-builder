@@ -80,28 +80,28 @@ public abstract class AtexCloudAbstractStack
     {
         return String.format("api.%s.%s",
                              properties.customerName(),
-                             properties.environmentType().getHostedZoneName());
+                             properties.environmentType().getZoneDetails().zoneName());
     }
 
     protected String sitemapDomainName()
     {
         return String.format("sitemap.%s.%s",
                              properties.customerName(),
-                             properties.environmentType().getHostedZoneName());
+                             properties.environmentType().getZoneDetails().zoneName());
     }
 
     protected String websiteDomainName()
     {
         return String.format("%s.%s", properties.customerName(),
-                             properties.environmentType().getHostedZoneName());
+                             properties.environmentType().getZoneDetails().zoneName());
     }
 
     private IHostedZone lookupHostedZone()
     {
         return HostedZone.fromHostedZoneAttributes(this, "HostedZone",
                                                    HostedZoneAttributes.builder()
-                                                                       .hostedZoneId(properties.environmentType().getHostedZoneId())
-                                                                       .zoneName(properties.environmentType().getHostedZoneName())
+                                                                       .hostedZoneId(properties.environmentType().getZoneDetails().zoneId())
+                                                                       .zoneName(properties.environmentType().getZoneDetails().zoneName())
                                                                        .build());
     }
 }

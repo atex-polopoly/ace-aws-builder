@@ -26,12 +26,13 @@ public class AtexCloudACEApp
 
         String loadBalancerDomain = getRequiredContext(app.getNode(), "elb-domain", "Load balancer domain ('elb-domain') is a required input!");
         String databaseClusterId = getRequiredContext(app.getNode(), "database-cluster-id", "Database cluster ID ('database-cluster-id') is a required input!");
+        String eventBusArn = getRequiredContext(app.getNode(), "event-bus-arn", "Event bus ARN ('event-bus-arn') is a required input!");
 
         // TODO: validate that the customer name is a valid customer shorthand (only a-z perhaps?)
         // TODO: validate that the account ID seems valid
         // TODO: validate that the region seems valid
 
-        CommonProperties properties = new CommonProperties(customerName, accountId, region, DEV, loadBalancerDomain, databaseClusterId);
+        CommonProperties properties = new CommonProperties(customerName, accountId, region, DEV, loadBalancerDomain, databaseClusterId, eventBusArn);
 
         AtexCloudACEBaseStack baseStack =
             new AtexCloudACEBaseStack(app, "ACEBaseStack",

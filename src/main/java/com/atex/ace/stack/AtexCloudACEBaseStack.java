@@ -86,14 +86,12 @@ public class AtexCloudACEBaseStack
         return ManagedPolicy.Builder.create(this, "ACEAccessPolicy")
                                     .managedPolicyName(String.format("%s-ace-access", properties.customerName()))
                                     .statements(List.of(allow(String.format("arn:aws:rds-db:%s:%s:dbuser:%s/%s-%s", properties.region(), properties.accountId(), properties.databaseClusterId(), properties.customerName(), properties.environmentType().getName()), "rds-db:connect"),
-                                                        allow("arn:aws:events:eu-west-1:103826127765:event-bus/cms-events-staging", "events:PutEvents"))) // TODO: this should not be hardcoded...
+                                                        allow(properties.eventBusArn(), "events:PutEvents")))
                                     .build();
     }
 
     private ManagedPolicy contentFilesBucketAccessPolicy(final Bucket bucket)
     {
-        // TODO: this doesn't really need to be a managed policy, it could be inline instead...
-
         return ManagedPolicy.Builder.create(this, "ContentFilesBucketAccessPolicy")
                                     .managedPolicyName(String.format("%s-%s-s3-access-policy", properties.customerName(), properties.environmentType().getName()))
                                     .document(PolicyDocument.Builder.create()
