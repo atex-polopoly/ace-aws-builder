@@ -25,13 +25,13 @@ public class AtexCloudACEApp
         String customerName = getRequiredContext(app.getNode(), "customer-name", "Customer name ('customer-name') is a required input!").trim().toLowerCase();
 
         String loadBalancerDomain = getRequiredContext(app.getNode(), "elb-domain", "Load balancer domain ('elb-domain') is a required input!");
-        String databaseClusterARN = getRequiredContext(app.getNode(), "database-arn", "Database ARN ('database-arn') is a required input!");
+        String databaseClusterId = getRequiredContext(app.getNode(), "database-cluster-id", "Database cluster ID ('database-cluster-id') is a required input!");
 
         // TODO: validate that the customer name is a valid customer shorthand (only a-z perhaps?)
         // TODO: validate that the account ID seems valid
         // TODO: validate that the region seems valid
 
-        CommonProperties properties = new CommonProperties(customerName, accountId, region, DEV, loadBalancerDomain, databaseClusterARN);
+        CommonProperties properties = new CommonProperties(customerName, accountId, region, DEV, loadBalancerDomain, databaseClusterId);
 
         AtexCloudACEBaseStack baseStack =
             new AtexCloudACEBaseStack(app, "ACEBaseStack",
@@ -61,7 +61,7 @@ public class AtexCloudACEApp
         return Map.of("customer", properties.customerName(),
                       "atexSoftware", "ACE",
                       "environment", properties.environmentType().getName(),
-                      "lastUpdated", Instant.now().toString());
+                      "lastUpdated", Instant.now().toString()); // not sure if lastUpdated is a great idea or a horrible one
     }
 
     private static Environment env(final String accountId,

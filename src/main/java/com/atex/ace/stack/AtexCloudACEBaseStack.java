@@ -40,7 +40,7 @@ public class AtexCloudACEBaseStack
         // IAM S3 user (with necessary policy and keys)
 
         ManagedPolicy contentFilesBucketAccessPolicy = contentFilesBucketAccessPolicy(contentFilesBucket);
-        User contentFilesBucketUser = user(List.of(contentFilesBucketAccessPolicy));
+        User contentFilesBucketUser = contentFilesBucketUser(List.of(contentFilesBucketAccessPolicy));
 
         CfnAccessKey contentFilesBucketUserAccessKey = accessKey("ContentFilesBucketAccessKey", contentFilesBucketUser);
 
@@ -73,10 +73,10 @@ public class AtexCloudACEBaseStack
                                       .build();
     }
 
-    private User user(final List<ManagedPolicy> managedPolicies)
+    private User contentFilesBucketUser(final List<ManagedPolicy> managedPolicies)
     {
         return User.Builder.create(this, "ContentFilesBucketUser")
-                           .userName(String.format("%s-s3", properties.customerName()))
+                           .userName(String.format("%s-%s-s3", properties.customerName(), properties.environmentType().getName()))
                            .managedPolicies(managedPolicies)
                            .build();
     }
@@ -85,15 +85,17 @@ public class AtexCloudACEBaseStack
     {
         return ManagedPolicy.Builder.create(this, "ACEAccessPolicy")
                                     .managedPolicyName(String.format("%s-ace-access", properties.customerName()))
-                                    .statements(List.of(allow(String.format("%s/%s-staging", properties.databaseARN(), properties.customerName()), "rds-db:connect"),
-                                                        allow("arn:aws:events:eu-west-1:103826127765:event-bus/cms-events-staging", "events:PutEvents")))
+                                    .statements(List.of(allow(String.format("arn:aws:rds-db:%s:%s:dbuser:%s/%s-%s", properties.region(), properties.accountId(), properties.databaseClusterId(), properties.customerName(), properties.environmentType().getName()), "rds-db:connect"),
+                                                        allow("arn:aws:events:eu-west-1:103826127765:event-bus/cms-events-staging", "events:PutEvents"))) // TODO: this should not be hardcoded...
                                     .build();
     }
 
     private ManagedPolicy contentFilesBucketAccessPolicy(final Bucket bucket)
     {
+        // TODO: this doesn't really need to be a managed policy, it could be inline instead...
+
         return ManagedPolicy.Builder.create(this, "ContentFilesBucketAccessPolicy")
-                                    .managedPolicyName(String.format("%s-s3-access-policy", properties.customerName()))
+                                    .managedPolicyName(String.format("%s-%s-s3-access-policy", properties.customerName(), properties.environmentType().getName()))
                                     .document(PolicyDocument.Builder.create()
                                                                     .statements(List.of(allow("*", "s3:ListAllMyBuckets"),
                                                                                         allow(String.format("arn:aws:s3:::%s/*", bucket.getBucketName()), "s3:PutObject", "s3:GetObject")))
@@ -103,8 +105,9 @@ public class AtexCloudACEBaseStack
 
     private Bucket contentFilesBucket()
     {
-        String bucketName = String.format("atex-cloud.%s-staging.files",
-                                          properties.customerName());
+        String bucketName = String.format("atex-cloud.%s-%s.files",
+                                          properties.customerName(),
+                                          properties.environmentType().getName());
 
         return Bucket.Builder.create(this, "ContentFilesBucket")
                              .bucketName(bucketName)
@@ -112,7 +115,7 @@ public class AtexCloudACEBaseStack
                              .encryption(S3_MANAGED)
                              .blockPublicAccess(BLOCK_ALL)
                              .lifecycleRules(List.of(LifecycleRule.builder()
-                                                                  .id(String.format("%s-tmp-lifecycle", bucketName)) // TODO: is this an inline policy? in that case no need to include bucket name in it..
+                                                                  .id("tmp-lifecycle")
                                                                   .expiration(Duration.days(30))
                                                                   .prefix("/tmp")
                                                                   .enabled(true)
