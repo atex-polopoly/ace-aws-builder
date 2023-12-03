@@ -103,7 +103,7 @@ public class AtexCloudACECloudfrontStack
                                                           .viewerProtocolPolicy(REDIRECT_TO_HTTPS)
                                                           .allowedMethods(AllowedMethods.ALLOW_GET_HEAD)
                                                           .cachePolicy(CachePolicy.Builder.create(this, "ACEAPIImageServiceBehaviourCachePolicy")
-                                                                                          .cachePolicyName("ACEAPIImageServiceBehaviourCachePolicy")
+                                                                                          .cachePolicyName("ACE-API-ImageService-Cache")
                                                                                           .enableAcceptEncodingBrotli(true)
                                                                                           .enableAcceptEncodingGzip(true)
                                                                                           .minTtl(Duration.seconds(0))
@@ -179,7 +179,7 @@ public class AtexCloudACECloudfrontStack
 
         return CachePolicy.Builder.create(this, "ACEAPICachePolicy")
                                   .comment("ACE API cache policy")
-                                  .cachePolicyName("ACE-API-Cache-2")
+                                  .cachePolicyName("ACE-API-Cache")
                                   .cookieBehavior(CacheCookieBehavior.none())
                                   .headerBehavior(CacheHeaderBehavior.none())
                                   .queryStringBehavior(CacheQueryStringBehavior.all())
@@ -199,7 +199,7 @@ public class AtexCloudACECloudfrontStack
 
         return OriginRequestPolicy.Builder.create(this, "ACEAPIOriginRequestPolicy")
                                           .comment("ACE API origin request policy")
-                                          .originRequestPolicyName("ACE-API-Origin-2")
+                                          .originRequestPolicyName("ACE-API-Origin")
                                           .cookieBehavior(OriginRequestCookieBehavior.none())
                                           .headerBehavior(OriginRequestHeaderBehavior.all())
                                           .queryStringBehavior(OriginRequestQueryStringBehavior.all())
@@ -215,7 +215,7 @@ public class AtexCloudACECloudfrontStack
 
         return ResponseHeadersPolicy.Builder.create(this, "ACEAPIResponseHeadersPolicy")
                                             .comment("ACE API origin response header policy")
-                                            .responseHeadersPolicyName("ACE-API-Response-2")
+                                            .responseHeadersPolicyName("ACE-API-Response")
                                             .customHeadersBehavior(ResponseCustomHeadersBehavior.builder().customHeaders(List.of()).build())
                                             .build();
     }
