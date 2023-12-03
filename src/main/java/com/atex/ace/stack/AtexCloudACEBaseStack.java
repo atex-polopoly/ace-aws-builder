@@ -1,6 +1,7 @@
 package com.atex.ace.stack;
 
 import com.atex.ace.CommonProperties;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import software.amazon.awscdk.Duration;
@@ -14,6 +15,7 @@ import software.amazon.awscdk.services.s3.LifecycleRule;
 import software.constructs.Construct;
 import software.amazon.awscdk.StackProps;
 
+import static com.atex.ace.EnvironmentType.*;
 import static software.amazon.awscdk.services.iam.Effect.*;
 import static software.amazon.awscdk.services.s3.BlockPublicAccess.*;
 import static software.amazon.awscdk.services.s3.BucketEncryption.*;
@@ -51,11 +53,16 @@ public class AtexCloudACEBaseStack
 
         certificate("APICertificate", apiDomainName(), hostedZone);
         certificate("SitemapCertificate", sitemapDomainName(), hostedZone);
-        certificate("WebsiteCertificate", websiteDomainName(), hostedZone);
+//        certificate("WebsiteCertificate", websiteDomainName(), hostedZone);
 
         // DNS entries
 
-        dnsEntry(sitemapDomainName(), properties.loadBalancerDomain(), hostedZone);
+        if (properties.environmentType() != PROD) {
+            // This would be possible to do in prod as well if we delegated also production
+            // atexcloud.io subdomains (like zawya.atexcloud.io) to the production account.
+
+            dnsEntry(sitemapDomainName(), properties.loadBalancerDomain(), hostedZone);
+        }
 
         // ACE access policy
 
@@ -83,10 +90,20 @@ public class AtexCloudACEBaseStack
 
     private ManagedPolicy aceAccessPolicy()
     {
+        List<PolicyStatement> policyStatements = new ArrayList<>();
+
+        policyStatements.add(allow(String.format("arn:aws:rds-db:%s:%s:dbuser:%s/%s-%s", properties.region(),
+                                                 properties.accountId(), properties.rdsClusterId(),
+                                                 properties.customerName(), properties.environmentType().getName()),
+                                   "rds-db:connect"));
+
+        if (properties.environmentType() != DEV) {
+            policyStatements.add(allow(properties.environmentType().getEventBusArn(), "events:PutEvents"));
+        }
+
         return ManagedPolicy.Builder.create(this, "ACEAccessPolicy")
                                     .managedPolicyName(String.format("%s-ace-access", properties.customerName()))
-                                    .statements(List.of(allow(String.format("arn:aws:rds-db:%s:%s:dbuser:%s/%s-%s", properties.region(), properties.accountId(), properties.databaseClusterId(), properties.customerName(), properties.environmentType().getName()), "rds-db:connect"),
-                                                        allow(properties.eventBusArn(), "events:PutEvents")))
+                                    .statements(policyStatements)
                                     .build();
     }
 

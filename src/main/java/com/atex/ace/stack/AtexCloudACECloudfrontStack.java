@@ -58,12 +58,12 @@ public class AtexCloudACECloudfrontStack
                                                     .protocolPolicy(HTTPS_ONLY)
                                                     .originSslProtocols(List.of(TLS_V1_2))
                                                     .build();
-
-        HttpOrigin websiteOrigin = HttpOrigin.Builder.create(properties.loadBalancerDomain())
-                                                     .originId("Atex Cloud rack ELB")
-                                                     .protocolPolicy(MATCH_VIEWER)
-                                                     .originSslProtocols(List.of(TLS_V1_2))
-                                                     .build();
+//
+//        HttpOrigin websiteOrigin = HttpOrigin.Builder.create(properties.loadBalancerDomain())
+//                                                     .originId("Atex Cloud rack ELB")
+//                                                     .protocolPolicy(MATCH_VIEWER)
+//                                                     .originSslProtocols(List.of(TLS_V1_2))
+//                                                     .build();
 
         // Cloudfront policies
 
@@ -74,10 +74,15 @@ public class AtexCloudACECloudfrontStack
         // Cloudfront distributions
 
         Distribution apiDistribution = createApiDistribution(aceApiOrigin, apiOriginRequestPolicy, apiResponseHeadersPolicy, apiCachePolicy, hostedZone);
-        Distribution aceCustomerWebsite = createWebsiteDistribution(websiteOrigin, hostedZone);
+//        Distribution aceCustomerWebsite = createWebsiteDistribution(websiteOrigin, hostedZone);
 
-        dnsEntry(apiDomainName(), apiDistribution.getDistributionDomainName(), hostedZone);
-        dnsEntry(websiteDomainName(), aceCustomerWebsite.getDistributionDomainName(), hostedZone);
+        if (properties.environmentType() != PROD) {
+            // This would be possible to do in prod as well if we delegated also production
+            // atexcloud.io subdomains (like zawya.atexcloud.io) to the production account.
+
+            dnsEntry(apiDomainName(), apiDistribution.getDistributionDomainName(), hostedZone);
+//            dnsEntry(websiteDomainName(), aceCustomerWebsite.getDistributionDomainName(), hostedZone);
+        }
 
         // TODO: lambda@edge?
     }
@@ -101,6 +106,9 @@ public class AtexCloudACECloudfrontStack
                                                                                           .cachePolicyName("ACEAPIImageServiceBehaviourCachePolicy")
                                                                                           .enableAcceptEncodingBrotli(true)
                                                                                           .enableAcceptEncodingGzip(true)
+                                                                                          .minTtl(Duration.seconds(0))
+                                                                                          .maxTtl(Duration.days(365))
+                                                                                          .defaultTtl(Duration.seconds(0))
                                                                                           .queryStringBehavior(CacheQueryStringBehavior.all())
                                                                                           .headerBehavior(CacheHeaderBehavior.allowList("Host"))
                                                                                           .cookieBehavior(CacheCookieBehavior.none())
@@ -134,34 +142,34 @@ public class AtexCloudACECloudfrontStack
                                    .build();
     }
 
-    private Distribution createWebsiteDistribution(final IOrigin origin,
-                                                   final IHostedZone hostedZone)
-    {
-        ICertificate cloudfrontWebsiteCertificate = certificate("WebsiteCertificate", websiteDomainName(), hostedZone);
-
-        return Distribution.Builder.create(this, "WebsiteDistribution")
-                                   .comment(String.format("%s %s", properties.customerName(), properties.environmentType().getName()))
-                                   .domainNames(List.of(websiteDomainName()))
-                                   .certificate(cloudfrontWebsiteCertificate)
-                                   .defaultBehavior(BehaviorOptions.builder()
-                                                                   .origin(origin)
-                                                                   .compress(true)
-                                                                   .viewerProtocolPolicy(REDIRECT_TO_HTTPS)
-                                                                   .allowedMethods(ALLOW_GET_HEAD)
-                                                                   .cachePolicy(CachePolicy.Builder.create(this, "ACEWebDefaultCacheBehaviour")
-                                                                                                   .cachePolicyName("ACEWebDefaultCacheBehaviour")
-                                                                                                   .minTtl(Duration.seconds(1))
-                                                                                                   .maxTtl(Duration.days(365))
-                                                                                                   .defaultTtl(Duration.days(1))
-                                                                                                   .queryStringBehavior(CacheQueryStringBehavior.allowList("previewData", "q", "amp", "page", "debugAds", "debugRequest"))
-                                                                                                   .headerBehavior(CacheHeaderBehavior.allowList("Origin", "CloudFront-Is-Tablet-Viewer", "CloudFront-Is-Mobile-Viewer", "Host", "CloudFront-Is-Desktop-Viewer"))
-                                                                                                   .cookieBehavior(CacheCookieBehavior.none())
-                                                                                                   .enableAcceptEncodingGzip(true)
-                                                                                                   .enableAcceptEncodingBrotli(true)
-                                                                                                   .build())
-                                                                   .build())
-                                   .build();
-    }
+//    private Distribution createWebsiteDistribution(final IOrigin origin,
+//                                                   final IHostedZone hostedZone)
+//    {
+//        ICertificate cloudfrontWebsiteCertificate = certificate("WebsiteCertificate", websiteDomainName(), hostedZone);
+//
+//        return Distribution.Builder.create(this, "WebsiteDistribution")
+//                                   .comment(String.format("%s %s", properties.customerName(), properties.environmentType().getName()))
+//                                   .domainNames(List.of(websiteDomainName()))
+//                                   .certificate(cloudfrontWebsiteCertificate)
+//                                   .defaultBehavior(BehaviorOptions.builder()
+//                                                                   .origin(origin)
+//                                                                   .compress(true)
+//                                                                   .viewerProtocolPolicy(REDIRECT_TO_HTTPS)
+//                                                                   .allowedMethods(ALLOW_GET_HEAD)
+//                                                                   .cachePolicy(CachePolicy.Builder.create(this, "ACEWebDefaultCacheBehaviour")
+//                                                                                                   .cachePolicyName("ACEWebDefaultCacheBehaviour")
+//                                                                                                   .minTtl(Duration.seconds(1))
+//                                                                                                   .maxTtl(Duration.days(365))
+//                                                                                                   .defaultTtl(Duration.days(1))
+//                                                                                                   .queryStringBehavior(CacheQueryStringBehavior.allowList("previewData", "q", "amp", "page", "debugAds", "debugRequest"))
+//                                                                                                   .headerBehavior(CacheHeaderBehavior.allowList("Origin", "CloudFront-Is-Tablet-Viewer", "CloudFront-Is-Mobile-Viewer", "Host", "CloudFront-Is-Desktop-Viewer"))
+//                                                                                                   .cookieBehavior(CacheCookieBehavior.none())
+//                                                                                                   .enableAcceptEncodingGzip(true)
+//                                                                                                   .enableAcceptEncodingBrotli(true)
+//                                                                                                   .build())
+//                                                                   .build())
+//                                   .build();
+//    }
 
     private ICachePolicy cachePolicy()
     {
@@ -171,7 +179,7 @@ public class AtexCloudACECloudfrontStack
 
         return CachePolicy.Builder.create(this, "ACEAPICachePolicy")
                                   .comment("ACE API cache policy")
-                                  .cachePolicyName("ACE-API-Cache")
+                                  .cachePolicyName("ACE-API-Cache-2")
                                   .cookieBehavior(CacheCookieBehavior.none())
                                   .headerBehavior(CacheHeaderBehavior.none())
                                   .queryStringBehavior(CacheQueryStringBehavior.all())
@@ -191,7 +199,7 @@ public class AtexCloudACECloudfrontStack
 
         return OriginRequestPolicy.Builder.create(this, "ACEAPIOriginRequestPolicy")
                                           .comment("ACE API origin request policy")
-                                          .originRequestPolicyName("ACE-API-Origin")
+                                          .originRequestPolicyName("ACE-API-Origin-2")
                                           .cookieBehavior(OriginRequestCookieBehavior.none())
                                           .headerBehavior(OriginRequestHeaderBehavior.all())
                                           .queryStringBehavior(OriginRequestQueryStringBehavior.all())
@@ -207,7 +215,7 @@ public class AtexCloudACECloudfrontStack
 
         return ResponseHeadersPolicy.Builder.create(this, "ACEAPIResponseHeadersPolicy")
                                             .comment("ACE API origin response header policy")
-                                            .responseHeadersPolicyName("ACE-API-Response")
+                                            .responseHeadersPolicyName("ACE-API-Response-2")
                                             .customHeadersBehavior(ResponseCustomHeadersBehavior.builder().customHeaders(List.of()).build())
                                             .build();
     }

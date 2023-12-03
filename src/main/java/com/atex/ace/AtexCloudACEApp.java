@@ -18,24 +18,28 @@ public class AtexCloudACEApp
     {
         App app = new App();
 
-        String accountId = getRequiredContext(app.getNode(), "account-id", "Account ID ('account-id') is a required input!");
-        String region = getRequiredContext(app.getNode(), "region", "Region ('region') is a required input!");
-
         // Customer name is always just lowercase, so both 'Zawya' and 'ZAWYA' will be 'zawya'
-        String customerName = getRequiredContext(app.getNode(), "customer-name", "Customer name ('customer-name') is a required input!").trim().toLowerCase();
+        String customerName = getRequiredContext(app.getNode(), "customer", "Customer name (example: '-c customer=\"zawya\"') is a required input!").trim().toLowerCase();
 
-        String loadBalancerDomain = getRequiredContext(app.getNode(), "elb-domain", "Load balancer domain ('elb-domain') is a required input!");
-        String databaseClusterId = getRequiredContext(app.getNode(), "database-cluster-id", "Database cluster ID ('database-cluster-id') is a required input!");
-        String eventBusArn = getRequiredContext(app.getNode(), "event-bus-arn", "Event bus ARN ('event-bus-arn') is a required input!");
+        String accountId = getRequiredContext(app.getNode(), "account", "Account ID (example: '-c account=\"123456789\"') is a required input!");
+        String region = getRequiredContext(app.getNode(), "region", "Region (example: '-c region=\"eu-west-1\"') is a required input!");
+
+        EnvironmentType environmentType = getEnvironmentType(app.getNode());
+
+        String loadBalancerDomain = getRequiredContext(app.getNode(), "elb", "ELB domain (example: '-c elb=\"atex-Route-XXXXXXXXXXXXX-YYYYYYYYYY.eu-west-1.elb.amazonaws.com\"') is a required input!");
+        String rdsClusterId = getRequiredContext(app.getNode(), "rds-cluster-id", "RDS cluster ID (example: '-c rds-cluster-id=\"cluster-XXXXXXXXXXXXXXXXXXXXXXXXX\"') is a required input!");
 
         // TODO: validate that the customer name is a valid customer shorthand (only a-z perhaps?)
         // TODO: validate that the account ID seems valid
         // TODO: validate that the region seems valid
 
-        CommonProperties properties = new CommonProperties(customerName, accountId, region, DEV, loadBalancerDomain, databaseClusterId, eventBusArn);
+        // TODO: we would like to have a longer version of the customer name as well (like Unione Sarda, compared to short version unionesarda)
+        // TODO: we would sometimes like to have a longer version name for env type (like production instead of prod)
+
+        CommonProperties properties = new CommonProperties(customerName, accountId, region, environmentType, loadBalancerDomain, rdsClusterId);
 
         AtexCloudACEBaseStack baseStack =
-            new AtexCloudACEBaseStack(app, "ACEBaseStack",
+            new AtexCloudACEBaseStack(app, String.format("atex-cloud-%s-%s-ace-base", customerName, environmentType.getName()),
                                       StackProps.builder()
                                                 .env(env(accountId, region))
                                                 .tags(standardTags(properties))
@@ -44,7 +48,7 @@ public class AtexCloudACEApp
                                       properties);
 
         AtexCloudACECloudfrontStack cloudfrontStack =
-            new AtexCloudACECloudfrontStack(app, "ACECloudfrontStack",
+            new AtexCloudACECloudfrontStack(app, String.format("atex-cloud-%s-%s-ace-cloudfront", customerName, environmentType.getName()),
                                             StackProps.builder()
                                                       .env(env(accountId, "us-east-1")) // this stack has to be in North Virginia for CloudFront
                                                       .tags(standardTags(properties))
@@ -74,13 +78,30 @@ public class AtexCloudACEApp
                           .build();
     }
 
+    private static EnvironmentType getEnvironmentType(final Node node)
+    {
+        String envTypeString = (String) node.tryGetContext("env");
+
+        if (StringUtils.isEmpty(envTypeString) || StringUtils.isEmpty(envTypeString.trim())) {
+            throw new RuntimeException("Environment (dev|staging|prod, example: '-c env=\"staging\"') is a required parameter.");
+        }
+
+        EnvironmentType environmentType = fromString(envTypeString.toLowerCase());
+
+        if (environmentType == null) {
+            throw new RuntimeException(String.format("Environment value '%s' not one of the possible values (dev|staging|prod).", envTypeString));
+        }
+
+        return environmentType;
+    }
+
     private static String getRequiredContext(final Node node,
                                              final String contextParameter,
                                              final String message)
     {
         String value = (String) node.tryGetContext(contextParameter);
 
-        if (StringUtils.isEmpty(value)) {
+        if (StringUtils.isEmpty(value) || StringUtils.isEmpty(value.trim())) {
             throw new RuntimeException(message);
         }
 
