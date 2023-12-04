@@ -76,6 +76,8 @@ public class AtexCloudACECloudfrontStack
         Distribution apiDistribution = createApiDistribution(aceApiOrigin, apiOriginRequestPolicy, apiResponseHeadersPolicy, apiCachePolicy, hostedZone);
 //        Distribution aceCustomerWebsite = createWebsiteDistribution(websiteOrigin, hostedZone);
 
+        dnsEntry(apiDomainName(), apiDistribution.getDistributionDomainName(), hostedZone);
+
         // TODO: lambda@edge?
     }
 
