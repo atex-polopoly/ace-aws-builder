@@ -76,14 +76,6 @@ public class AtexCloudACECloudfrontStack
         Distribution apiDistribution = createApiDistribution(aceApiOrigin, apiOriginRequestPolicy, apiResponseHeadersPolicy, apiCachePolicy, hostedZone);
 //        Distribution aceCustomerWebsite = createWebsiteDistribution(websiteOrigin, hostedZone);
 
-        if (properties.environmentType() != PROD) {
-            // This would be possible to do in prod as well if we delegated also production
-            // atexcloud.io subdomains (like zawya.atexcloud.io) to the production account.
-
-            dnsEntry(apiDomainName(), apiDistribution.getDistributionDomainName(), hostedZone);
-//            dnsEntry(websiteDomainName(), aceCustomerWebsite.getDistributionDomainName(), hostedZone);
-        }
-
         // TODO: lambda@edge?
     }
 

@@ -29,6 +29,19 @@ public class AtexCloudACEApp
         String loadBalancerDomain = getRequiredContext(app.getNode(), "elb", "ELB domain (example: '-c elb=\"atex-Route-XXXXXXXXXXXXX-YYYYYYYYYY.eu-west-1.elb.amazonaws.com\"') is a required input!");
         String rdsClusterId = getRequiredContext(app.getNode(), "rds-cluster-id", "RDS cluster ID (example: '-c rds-cluster-id=\"cluster-XXXXXXXXXXXXXXXXXXXXXXXXX\"') is a required input!");
 
+        HostedZoneDetails hostedZoneDetails;
+
+        if (environmentType == PROD) {
+            // In prod mode we also require properties dnsZoneId and dnsZoneName
+
+            String zoneId = getRequiredContext(app.getNode(), "zoneId", "Hosted zone ID (example: '-c zoneId=XXXXXXXXXXXX' is a required input in production mode!");
+            String zoneName = getRequiredContext(app.getNode(), "zoneName", "Hosted zone name (example: '-c zoneName=dev.atexcloud.io' is a required input in production mode!");
+
+            hostedZoneDetails = new HostedZoneDetails(zoneId, zoneName);
+        } else {
+            hostedZoneDetails = environmentType.getZoneDetails();
+        }
+
         // TODO: validate that the customer name is a valid customer shorthand (only a-z perhaps?)
         // TODO: validate that the account ID seems valid
         // TODO: validate that the region seems valid
@@ -36,7 +49,7 @@ public class AtexCloudACEApp
         // TODO: we would like to have a longer version of the customer name as well (like Unione Sarda, compared to short version unionesarda)
         // TODO: we would sometimes like to have a longer version name for env type (like production instead of prod)
 
-        CommonProperties properties = new CommonProperties(customerName, accountId, region, environmentType, loadBalancerDomain, rdsClusterId);
+        CommonProperties properties = new CommonProperties(customerName, accountId, region, environmentType, loadBalancerDomain, rdsClusterId, hostedZoneDetails);
 
         AtexCloudACEBaseStack baseStack =
             new AtexCloudACEBaseStack(app, String.format("atex-cloud-%s-%s-ace-base", customerName, environmentType.getName()),

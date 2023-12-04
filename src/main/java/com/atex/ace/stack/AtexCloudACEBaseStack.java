@@ -57,12 +57,7 @@ public class AtexCloudACEBaseStack
 
         // DNS entries
 
-        if (properties.environmentType() != PROD) {
-            // This would be possible to do in prod as well if we delegated also production
-            // atexcloud.io subdomains (like zawya.atexcloud.io) to the production account.
-
-            dnsEntry(sitemapDomainName(), properties.loadBalancerDomain(), hostedZone);
-        }
+        dnsEntry(sitemapDomainName(), properties.loadBalancerDomain(), hostedZone);
 
         // ACE access policy
 

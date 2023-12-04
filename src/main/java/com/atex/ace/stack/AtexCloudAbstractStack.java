@@ -15,8 +15,6 @@ import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.route53.IHostedZone;
 import software.constructs.Construct;
 
-import static com.atex.ace.EnvironmentType.*;
-
 public abstract class AtexCloudAbstractStack
     extends Stack
 {
@@ -63,17 +61,6 @@ public abstract class AtexCloudAbstractStack
                                       final String domainName,
                                       final IHostedZone hostedZone)
     {
-        if (properties.environmentType() == PROD) {
-            // This would be possible to do without e-mail validation if we delegated also production
-            // atexcloud.io subdomains (like zawya.atexcloud.io) to the production account.
-
-            return Certificate.Builder.create(this, certificateName)
-                                      .domainName(domainName)
-                                      .certificateName(certificateName)
-                                      .validation(CertificateValidation.fromEmail())
-                                      .build();
-        }
-
         return Certificate.Builder.create(this, certificateName)
                                   .domainName(domainName)
                                   .certificateName(certificateName)
@@ -93,35 +80,28 @@ public abstract class AtexCloudAbstractStack
     {
         return String.format("api.%s.%s",
                              properties.customerName(),
-                             properties.environmentType().getZoneDetails().zoneName());
+                             properties.hostedZoneDetails().zoneName());
     }
 
     protected String sitemapDomainName()
     {
         return String.format("sitemap.%s.%s",
                              properties.customerName(),
-                             properties.environmentType().getZoneDetails().zoneName());
+                             properties.hostedZoneDetails().zoneName());
     }
 
     protected String websiteDomainName()
     {
         return String.format("%s.%s", properties.customerName(),
-                             properties.environmentType().getZoneDetails().zoneName());
+                             properties.hostedZoneDetails().zoneName());
     }
 
     private IHostedZone lookupHostedZone()
     {
-        if (properties.environmentType() == PROD) {
-            // This would be possible to do in prod as well if we delegated also production
-            // atexcloud.io subdomains (like zawya.atexcloud.io) to the production account.
-
-            return null;
-        }
-
         return HostedZone.fromHostedZoneAttributes(this, "HostedZone",
                                                    HostedZoneAttributes.builder()
-                                                                       .hostedZoneId(properties.environmentType().getZoneDetails().zoneId())
-                                                                       .zoneName(properties.environmentType().getZoneDetails().zoneName())
+                                                                       .hostedZoneId(properties.hostedZoneDetails().zoneId())
+                                                                       .zoneName(properties.hostedZoneDetails().zoneName())
                                                                        .build());
     }
 }
