@@ -16,6 +16,7 @@ import software.constructs.Construct;
 import software.amazon.awscdk.StackProps;
 
 import static com.atex.ace.EnvironmentType.*;
+import static software.amazon.awscdk.RemovalPolicy.*;
 import static software.amazon.awscdk.services.iam.Effect.*;
 import static software.amazon.awscdk.services.s3.BlockPublicAccess.*;
 import static software.amazon.awscdk.services.s3.BucketEncryption.*;
@@ -61,7 +62,7 @@ public class AtexCloudACEBaseStack
 
         // ACE access policy
 
-        ManagedPolicy aceAccessPolicy = aceAccessPolicy();
+        ManagedPolicy aceAccessPolicy = aceAccessPolicy(contentFilesBucket);
         asOutput("ACEAccessPolicyOutput", aceAccessPolicy.getManagedPolicyArn());
     }
 
@@ -83,18 +84,24 @@ public class AtexCloudACEBaseStack
                            .build();
     }
 
-    private ManagedPolicy aceAccessPolicy()
+    private ManagedPolicy aceAccessPolicy(final Bucket contentFilesBucket)
     {
         List<PolicyStatement> policyStatements = new ArrayList<>();
 
+        // RDS connection
         policyStatements.add(allow(String.format("arn:aws:rds-db:%s:%s:dbuser:%s/%s-%s", properties.region(),
-                                                 properties.accountId(), properties.rdsClusterId(),
+                                                 properties.accountId(), properties.rdsResourceId(),
                                                  properties.customerName(), properties.environmentType().getName()),
                                    "rds-db:connect"));
 
         if (properties.environmentType() != DEV) {
+            // Event bus events
             policyStatements.add(allow(properties.environmentType().getEventBusArn(), "events:PutEvents"));
         }
+
+        // S3 bucket
+//        policyStatements.addAll(List.of(allow("*", "s3:ListAllMyBuckets"),
+//                                        allow(String.format("arn:aws:s3:::%s/*", contentFilesBucket.getBucketName()), "s3:PutObject", "s3:GetObject")));
 
         return ManagedPolicy.Builder.create(this, "ACEAccessPolicy")
                                     .managedPolicyName(String.format("%s-ace-access", properties.customerName()))
@@ -121,6 +128,7 @@ public class AtexCloudACEBaseStack
 
         return Bucket.Builder.create(this, "ContentFilesBucket")
                              .bucketName(bucketName)
+//                             .removalPolicy(RETAIN)
                              .versioned(false)
                              .encryption(S3_MANAGED)
                              .blockPublicAccess(BLOCK_ALL)
