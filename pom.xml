@@ -15,6 +15,9 @@
     <cdk.version>2.111.0</cdk.version>
     <constructs.version>[10.0.0,11.0.0)</constructs.version>
     <junit.version>5.7.1</junit.version>
+
+    <!-- The default app class -->
+    <main.class>com.atex.ace.AtexCloudACEApp</main.class>
   </properties>
 
   <build>
@@ -33,7 +36,7 @@
         <artifactId>exec-maven-plugin</artifactId>
         <version>3.1.0</version>
         <configuration>
-          <mainClass>com.atex.ace.AtexCloudACEApp</mainClass>
+          <mainClass>${main.class}</mainClass>
         </configuration>
       </plugin>
     </plugins>
