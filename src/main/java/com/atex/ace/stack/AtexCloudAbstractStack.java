@@ -79,15 +79,15 @@ public abstract class AtexCloudAbstractStack
 
     protected String apiDomainName()
     {
-        return String.format("api.%s.%s",
-                             properties.environmentType() != EnvironmentType.PROD ? properties.customerName() : "",
+        return String.format("api%s.%s",
+                             properties.environmentType() != EnvironmentType.PROD ? "." + properties.customerName() : "",
                              properties.hostedZoneDetails().zoneName());
     }
 
     protected String sitemapDomainName()
     {
         return String.format("sitemap.%s.%s",
-                             properties.environmentType() != EnvironmentType.PROD ? properties.customerName() : "",
+                             properties.environmentType() != EnvironmentType.PROD ? "." + properties.customerName() : "",
                              properties.hostedZoneDetails().zoneName());
     }
 
