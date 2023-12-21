@@ -1,6 +1,7 @@
 package com.atex.ace.stack;
 
 import com.atex.ace.CommonProperties;
+import com.atex.ace.EnvironmentType;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Stack;
@@ -79,14 +80,14 @@ public abstract class AtexCloudAbstractStack
     protected String apiDomainName()
     {
         return String.format("api.%s.%s",
-                             properties.customerName(),
+                             properties.environmentType() != EnvironmentType.PROD ? properties.customerName() : "",
                              properties.hostedZoneDetails().zoneName());
     }
 
     protected String sitemapDomainName()
     {
         return String.format("sitemap.%s.%s",
-                             properties.customerName(),
+                             properties.environmentType() != EnvironmentType.PROD ? properties.customerName() : "",
                              properties.hostedZoneDetails().zoneName());
     }
 
