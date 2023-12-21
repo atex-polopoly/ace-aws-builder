@@ -86,7 +86,7 @@ public abstract class AtexCloudAbstractStack
 
     protected String sitemapDomainName()
     {
-        return String.format("sitemap.%s.%s",
+        return String.format("sitemap%s.%s",
                              properties.environmentType() != EnvironmentType.PROD ? "." + properties.customerName() : "",
                              properties.hostedZoneDetails().zoneName());
     }
