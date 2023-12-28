@@ -1,5 +1,6 @@
-package com.atex.shared;
+package com.atex.shared.stack;
 
+import com.atex.shared.configuration.RDSProperties;
 import java.util.List;
 import java.util.Map;
 import software.amazon.awscdk.CfnOutput;

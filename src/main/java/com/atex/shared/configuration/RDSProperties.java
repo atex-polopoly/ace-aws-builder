@@ -1,4 +1,4 @@
-package com.atex.shared;
+package com.atex.shared.configuration;
 
 import com.atex.ace.EnvironmentType;
 
